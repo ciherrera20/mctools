@@ -7,7 +7,7 @@ import json
 
 from typing import Tuple, List
 
-from mctools.errors import RCONMalformedPacketError, PINGMalformedPacketError
+from mctools.errors import RCONMalformedPacketError, PINGMalformedPacketError, ProtocolError
 
 MAP = {''}
 
@@ -465,6 +465,8 @@ class PINGEncoder:
         # Iterate over the result, and do the necessary bitwise stuff:
 
         for b in range(5):
+            if b > len(byts)-1:
+                raise ProtocolError("Incomplete Varint")
 
             part = byts[b]
             result |= (part & 0x7F) << (7 * b)
@@ -474,8 +476,7 @@ class PINGEncoder:
                 # Fond our part, time to exit
 
                 return result, b + 1
-
-        return result, b + 1
+        raise ProtocolError("Varint is too big!")
 
     @staticmethod
     def decode_sock(sock) -> int:
@@ -527,6 +528,6 @@ class PINGEncoder:
 
                 # Varint/long is way too big, throw an error
 
-                raise Exception("Varint/long is greater than 10!")
+                raise ProtocolError("Varint/long is greater than 10!")
 
         return result
